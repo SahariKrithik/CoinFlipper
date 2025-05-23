@@ -1,95 +1,122 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>CoinFlip Game</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        background: #111;
-        color: white;
-        height: 100%;
-        width: 100%;
-        overflow: hidden;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-family: sans-serif;
-      }
+<head>
+  <meta charset="utf-8" />
+  <title>CoinFlip Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #111;
+      color: white;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: sans-serif;
+    }
 
-      #loader {
-        text-align: center;
-        position: absolute;
-        z-index: 999;
-      }
+    #loader {
+      text-align: center;
+      position: absolute;
+      z-index: 999;
+    }
 
-      #progressBar {
-        width: 80%;
-        height: 20px;
-        background: #444;
-        margin-top: 20px;
-        border-radius: 10px;
-        overflow: hidden;
-      }
+    #progressBar {
+      width: 80%;
+      height: 20px;
+      background: #444;
+      margin-top: 20px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
 
-      #progressBarFill {
-        width: 0%;
-        height: 100%;
-        background: #0f0;
-        transition: width 0.2s;
-      }
+    #progressBarFill {
+      width: 0%;
+      height: 100%;
+      background: #0f0;
+      transition: width 0.2s;
+    }
 
-      canvas {
-        width: 100%;
-        height: 100%;
-        display: none;
-        position: absolute;
-        top: 0;
-        left: 0;
-      }
-    </style>
-  </head>
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
 
-  <body>
-    <div id="loader">
-      <h1>Loading CoinFlip...</h1>
-      <div id="progressBar">
-        <div id="progressBarFill"></div>
-      </div>
+    input#mobileInputOverlay {
+      position: absolute;
+      top: -100px;
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="loader">
+    <h1>Loading CoinFlip...</h1>
+    <div id="progressBar">
+      <div id="progressBarFill"></div>
     </div>
+  </div>
 
-    <canvas id="unity-canvas"></canvas>
+  <canvas id="unity-canvas" tabindex="-1"></canvas>
+  <input id="mobileInputOverlay" type="number" inputmode="numeric" pattern="[0-9]*" oninput="sendToUnity(this.value)" />
 
-    <script>
-      var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/CoinFlipper.loader.js";
-      var config = {
-        dataUrl: buildUrl + "/CoinFlipper.data.br",
-        frameworkUrl: buildUrl + "/CoinFlipper.framework.js.br",
-        codeUrl: buildUrl + "/CoinFlipper.wasm.br",
-        streamingAssetsUrl: "StreamingAssets",
-        companyName: "DefaultCompany",
-        productName: "CoinFlipperReplica",
-        productVersion: "1.0",
-        devicePixelRatio: 1,
-        canvas: document.querySelector("#unity-canvas")
-      };
+  <script>
+    function showMobileKeyboard(currentValue) {
+      const input = document.getElementById("mobileInputOverlay");
+      input.value = currentValue || "";
+      input.style.top = "50%";
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
 
-      var script = document.createElement("script");
-      script.src = loaderUrl;
-      script.onload = () => {
-        createUnityInstance(document.querySelector("#unity-canvas"), config, (progress) => {
-          document.querySelector("#progressBarFill").style.width = (progress * 100) + "%";
-        }).then((unityInstance) => {
-          document.querySelector("#loader").style.display = "none";
-          document.querySelector("#unity-canvas").style.display = "block";
-        }).catch((message) => {
-          alert(message);
-        });
-      };
-      document.body.appendChild(script);
-    </script>
-  </body>
+    window.showMobileKeyboard = showMobileKeyboard;
+
+    function sendToUnity(value) {
+      if (unityInstance) {
+        unityInstance.SendMessage("GameManager", "ReceiveInputFromOverlay", value);
+      }
+    }
+
+    const buildUrl = "Build";
+    const loaderUrl = buildUrl + "/CoinFlipper.loader.js";
+    const config = {
+      dataUrl: buildUrl + "/CoinFlipper.data.br",
+      frameworkUrl: buildUrl + "/CoinFlipper.framework.js.br",
+      codeUrl: buildUrl + "/CoinFlipper.wasm.br",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: "DefaultCompany",
+      productName: "CoinFlipperReplica",
+      productVersion: "1.0",
+      devicePixelRatio: 1,
+      canvas: document.querySelector("#unity-canvas")
+    };
+
+    let unityInstance = null;
+
+    const script = document.createElement("script");
+    script.src = loaderUrl;
+    script.onload = () => {
+      createUnityInstance(document.querySelector("#unity-canvas"), config, (progress) => {
+        document.querySelector("#progressBarFill").style.width = (progress * 100) + "%";
+      }).then((instance) => {
+        unityInstance = instance;
+        document.getElementById("loader").style.display = "none";
+        document.querySelector("#unity-canvas").style.display = "block";
+      }).catch((message) => {
+        alert(message);
+      });
+    };
+    document.body.appendChild(script);
+  </script>
+</body>
 </html>
